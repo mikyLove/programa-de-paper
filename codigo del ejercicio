@@ -1,0 +1,64 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import SGD, Adam, RMSprop
+import matplotlib.pyplot as plt
+
+# Generación de datos sintéticos (simulando 10,000 ejemplos)
+# Supongamos que cada ejemplo tiene 20 características y queremos predecir una venta (regresión)
+num_examples = 10000
+num_features = 20
+
+np.random.seed(42)
+X = np.random.randn(num_examples, num_features)
+# Creamos una variable target con alguna relación lineal y algo de ruido
+true_weights = np.random.randn(num_features, 1)
+y = X.dot(true_weights) + np.random.randn(num_examples, 1) * 0.5
+
+# Definición de la arquitectura de la red neuronal
+def build_model():
+    model = Sequential([
+        Dense(64, activation='relu', input_shape=(num_features,)),
+        Dense(64, activation='relu'),
+        Dense(1)  # Capa de salida para regresión
+    ])
+    return model
+
+# Función para entrenar el modelo con un optimizador dado
+def train_model(optimizer, epochs=50, batch_size=32):
+    model = build_model()
+    model.compile(optimizer=optimizer, loss='mean_squared_error')
+    history = model.fit(X, y, epochs=epochs, batch_size=batch_size,
+                        validation_split=0.2, verbose=0)
+    return history
+
+# Lista de optimizadores a comparar
+optimizers = {
+    'SGD': SGD(learning_rate=0.01),
+    'Adam': Adam(learning_rate=0.001),
+    'RMSProp': RMSprop(learning_rate=0.001)
+}
+
+histories = {}
+
+# Entrenar la misma arquitectura con cada optimizador
+for opt_name, opt in optimizers.items():
+    print(f'Entrenando con {opt_name}...')
+    histories[opt_name] = train_model(opt)
+
+# Comparación de la velocidad de convergencia y error final
+plt.figure(figsize=(10, 6))
+for opt_name, history in histories.items():
+    plt.plot(history.history['val_loss'], label=opt_name)
+plt.title('Comparación de validación MSE entre optimizadores')
+plt.xlabel('Época')
+plt.ylabel('Error cuadrático medio (MSE)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Imprimir error final de cada optimizador
+for opt_name, history in histories.items():
+    final_loss = history.history['val_loss'][-1]
+    print(f'{opt_name} - Error final en validación: {final_loss:.4f}')
